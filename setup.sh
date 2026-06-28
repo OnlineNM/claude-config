@@ -224,6 +224,9 @@ initial_auth_session() {
 cleanup() {
   if command -v claude &>/dev/null; then
     echo "→ Uninstalling Claude Code..."
+    # Installed via claude.ai/install.sh (standalone binary)
+    rm -f ~/.local/bin/claude
+    # Installed via npm (user-level or system-level)
     npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
     if [[ "$(uname)" != "Darwin" ]]; then
       sudo npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
