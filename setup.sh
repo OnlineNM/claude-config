@@ -184,8 +184,8 @@ install_plugins() {
   echo "→ Installing plugins..."
   for plugin in "${PLUGINS[@]}"; do
     echo "  → $plugin"
-    CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude plugin install "$plugin" --scope user || \
-      echo "  ⚠ Could not install $plugin"
+    CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude plugin install "$plugin" --scope user 2>/dev/null || \
+      echo "  ⚠ Could not install $plugin (will be active on first interactive session)"
   done
 }
 
