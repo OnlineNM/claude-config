@@ -128,6 +128,10 @@ setup_auth() {
   # Source ~/.claude/.env from shell config if not already present
   if [[ "$(uname)" == "Darwin" ]]; then
     SHELL_RC=~/.zshrc
+    # Ensure Homebrew is in PATH for future shells
+    if ! grep -q "homebrew/bin/brew shellenv" "$SHELL_RC" 2>/dev/null; then
+      echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$SHELL_RC"
+    fi
   else
     SHELL_RC=~/.bashrc
   fi
