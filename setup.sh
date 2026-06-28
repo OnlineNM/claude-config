@@ -33,7 +33,7 @@ MARKETPLACES=(
   "https://github.com/OnlineNM/claude-code-skills"
 )
 
-PLUGINS=(
+PLUGINS_OFFICIAL=(
   "context7@claude-plugins-official"
   "code-review@claude-plugins-official"
   "code-simplifier@claude-plugins-official"
@@ -44,6 +44,9 @@ PLUGINS=(
   "security-guidance@claude-plugins-official"
   "skill-creator@claude-plugins-official"
   "superpowers@claude-plugins-official"
+)
+
+PLUGINS_MARKETPLACE=(
   "codex@openai-codex"
   "context-mode@context-mode"
   "obsidian@obsidian-skills"
@@ -181,12 +184,25 @@ register_marketplaces() {
 
 # === PLUGINS INSTALLATION ===
 install_plugins() {
-  echo "→ Installing plugins..."
-  for plugin in "${PLUGINS[@]}"; do
+  local -n plugins=$1
+  local label=$2
+  echo "→ Installing $label plugins..."
+  for plugin in "${plugins[@]}"; do
     echo "  → $plugin"
     CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude plugin install "$plugin" --scope user 2>/dev/null || \
-      echo "  ⚠ Could not install $plugin (will be active on first interactive session)"
+      echo "  ⚠ Could not install $plugin"
   done
+}
+
+# === INITIAL AUTH SESSION ===
+initial_auth_session() {
+  echo ""
+  echo "→ Starting Claude for initial authentication..."
+  echo "  Once Claude loads and you see you are logged in, type /quit to continue setup."
+  echo ""
+  CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude
+  echo ""
+  echo "→ Resuming setup..."
 }
 
 # === CLEANUP ===
@@ -210,15 +226,12 @@ main() {
   setup_auth
   setup_hooks
   register_marketplaces
-  install_plugins
+  install_plugins PLUGINS_MARKETPLACE "marketplace"
+  initial_auth_session
+  install_plugins PLUGINS_OFFICIAL "official"
 
   echo ""
   echo "=== Setup complete! ==="
-  if [[ "$(uname)" == "Darwin" ]]; then
-    echo "Run: source ~/.zshrc && claude"
-  else
-    echo "Run: source ~/.bashrc && claude"
-  fi
 }
 
 main "$@"
