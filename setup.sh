@@ -126,7 +126,7 @@ setup_auth() {
     SHELL_RC=~/.bashrc
   fi
   if ! grep -q "\.claude/\.env" "$SHELL_RC"; then
-    echo '[ -f "$HOME/.claude/.env" ] && source "$HOME/.claude/.env"' >> "$SHELL_RC"
+    echo '[ -f "$HOME/.claude/.env" ] && { set -a; source "$HOME/.claude/.env"; set +a; }' >> "$SHELL_RC"
   fi
 
   # Create ~/.claude.json to bypass onboarding
