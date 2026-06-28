@@ -187,11 +187,18 @@ register_marketplaces() {
 }
 
 # === PLUGINS INSTALLATION ===
-install_plugins() {
-  local -n plugins=$1
-  local label=$2
-  echo "→ Installing $label plugins..."
-  for plugin in "${plugins[@]}"; do
+install_marketplace_plugins() {
+  echo "→ Installing marketplace plugins..."
+  for plugin in "${PLUGINS_MARKETPLACE[@]}"; do
+    echo "  → $plugin"
+    CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude plugin install "$plugin" --scope user 2>/dev/null || \
+      echo "  ⚠ Could not install $plugin"
+  done
+}
+
+install_official_plugins() {
+  echo "→ Installing official plugins..."
+  for plugin in "${PLUGINS_OFFICIAL[@]}"; do
     echo "  → $plugin"
     CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude plugin install "$plugin" --scope user 2>/dev/null || \
       echo "  ⚠ Could not install $plugin"
@@ -230,9 +237,9 @@ main() {
   setup_auth
   setup_hooks
   register_marketplaces
-  install_plugins PLUGINS_MARKETPLACE "marketplace"
+  install_marketplace_plugins
   initial_auth_session
-  install_plugins PLUGINS_OFFICIAL "official"
+  install_official_plugins
 
   echo ""
   echo "=== Setup complete! ==="
