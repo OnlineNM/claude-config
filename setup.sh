@@ -95,7 +95,11 @@ install_nodejs() {
 install_claude_code() {
   if ! command -v claude &>/dev/null; then
     echo "→ Installing Claude Code..."
-    npm install -g @anthropic-ai/claude-code
+    if [[ "$(uname)" == "Darwin" ]]; then
+      npm install -g @anthropic-ai/claude-code
+    else
+      sudo npm install -g @anthropic-ai/claude-code
+    fi
   else
     echo "✓ Claude Code $(claude --version) already installed"
   fi
