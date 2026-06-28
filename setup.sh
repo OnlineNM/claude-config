@@ -23,6 +23,7 @@ CLAUDE_OAUTH_TOKEN="${CLAUDE_CODE_OAUTH_TOKEN:-}"
 ACCOUNT_UUID="${CLAUDE_ACCOUNT_UUID:-}"
 EMAIL="${CLAUDE_EMAIL:-}"
 ORG_UUID="${CLAUDE_ORG_UUID:-}"
+DISPLAY_NAME="${CLAUDE_DISPLAY_NAME:-}"
 
 MARKETPLACES=(
   "https://github.com/mksglu/context-mode"
@@ -81,8 +82,8 @@ install_nodejs() {
     echo "→ Installing Node.js..."
     if [[ "$(uname)" == "Darwin" ]]; then
       if ! command -v brew &>/dev/null; then
-        echo "✗ Homebrew is required to install Node.js on macOS. Install it from https://brew.sh"
-        exit 1
+        echo "→ Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       fi
       brew install node
     else
@@ -141,7 +142,8 @@ setup_auth() {
   "oauthAccount": {
     "accountUuid": "$ACCOUNT_UUID",
     "emailAddress": "$EMAIL",
-    "organizationUuid": "$ORG_UUID"
+    "organizationUuid": "$ORG_UUID",
+    "displayName": "$DISPLAY_NAME"
   }
 }
 EOF
