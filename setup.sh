@@ -222,10 +222,23 @@ initial_auth_session() {
 
 # === CLEANUP ===
 cleanup() {
+  if command -v claude &>/dev/null; then
+    echo "→ Uninstalling Claude Code..."
+    if [[ "$(uname)" == "Darwin" ]]; then
+      npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
+    else
+      sudo npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
+    fi
+    echo "✓ Uninstalled Claude Code"
+  fi
   if [[ -d ~/.claude ]]; then
     echo "→ Removing existing ~/.claude..."
     rm -rf ~/.claude
     echo "✓ Removed ~/.claude"
+  fi
+  if [[ -f ~/.claude.json ]]; then
+    rm -f ~/.claude.json
+    echo "✓ Removed ~/.claude.json"
   fi
 }
 
