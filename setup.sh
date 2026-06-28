@@ -67,6 +67,7 @@ install_git() {
   if ! command -v git &>/dev/null; then
     echo "→ Installing git..."
     if [[ "$(uname)" == "Darwin" ]]; then
+      [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
       brew install git
     else
       sudo apt-get install -y git
@@ -84,6 +85,7 @@ install_nodejs() {
       if ! command -v brew &>/dev/null; then
         echo "→ Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        eval "$(/opt/homebrew/bin/brew shellenv)"
       fi
       brew install node
     else
