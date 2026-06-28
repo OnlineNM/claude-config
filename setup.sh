@@ -230,6 +230,11 @@ main() {
   echo "=== Claude Code Setup ==="
   echo ""
 
+  # Ensure Homebrew is in PATH on macOS
+  if [[ "$(uname)" == "Darwin" ]] && [[ -x /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  fi
+
   cleanup
   install_git
   install_nodejs
