@@ -23,7 +23,6 @@ CLAUDE_OAUTH_TOKEN="${CLAUDE_CODE_OAUTH_TOKEN:-}"
 ACCOUNT_UUID="${CLAUDE_ACCOUNT_UUID:-}"
 EMAIL="${CLAUDE_EMAIL:-}"
 ORG_UUID="${CLAUDE_ORG_UUID:-}"
-DOTFILES_REPO="${CLAUDE_DOTFILES_REPO:-}"
 
 MARKETPLACES=(
   "https://github.com/mksglu/context-mode"
@@ -158,31 +157,10 @@ setup_hooks() {
   cp "$SCRIPT_DIR/claude/scripts/load-env.sh" ~/.claude/scripts/
   chmod +x ~/.claude/scripts/job-done.sh ~/.claude/scripts/notify-waiting.sh
 
+  # Symlink settings.json so changes can be committed back to this repo
+  ln -sf "$SCRIPT_DIR/claude/settings.json" ~/.claude/settings.json
+
   echo "✓ Hooks and scripts installed"
-}
-
-# === DOTFILES CONFIGURATION ===
-setup_dotfiles() {
-  if [[ -z "$DOTFILES_REPO" ]]; then
-    echo "⚠ DOTFILES_REPO is not set. Skipping dotfiles setup."
-    return
-  fi
-
-  mkdir -p ~/.claude
-
-  if [[ ! -d ~/dotfiles ]]; then
-    echo "→ Cloning dotfiles..."
-    git clone "$DOTFILES_REPO" ~/dotfiles
-  else
-    echo "→ Updating dotfiles..."
-    git -C ~/dotfiles pull
-  fi
-
-  # Symlink settings.json if it exists in dotfiles
-  if [[ -f ~/dotfiles/claude/settings.json ]]; then
-    ln -sf ~/dotfiles/claude/settings.json ~/.claude/settings.json
-    echo "✓ settings.json symlinked"
-  fi
 }
 
 # === MARKETPLACE REGISTRATION ===
@@ -225,7 +203,6 @@ main() {
   install_claude_code
   setup_auth
   setup_hooks
-  setup_dotfiles
   register_marketplaces
   install_plugins
 
