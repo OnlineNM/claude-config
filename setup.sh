@@ -23,7 +23,6 @@ CLAUDE_OAUTH_TOKEN="${CLAUDE_CODE_OAUTH_TOKEN:-}"
 ACCOUNT_UUID="${CLAUDE_ACCOUNT_UUID:-}"
 EMAIL="${CLAUDE_EMAIL:-}"
 ORG_UUID="${CLAUDE_ORG_UUID:-}"
-DISPLAY_NAME="${CLAUDE_DISPLAY_NAME:-}"
 
 MARKETPLACES=(
   "https://github.com/mksglu/context-mode"
@@ -148,8 +147,7 @@ setup_auth() {
   "oauthAccount": {
     "accountUuid": "$ACCOUNT_UUID",
     "emailAddress": "$EMAIL",
-    "organizationUuid": "$ORG_UUID",
-    "displayName": "$DISPLAY_NAME"
+    "organizationUuid": "$ORG_UUID"
   }
 }
 EOF
