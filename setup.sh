@@ -167,11 +167,6 @@ setup_hooks() {
 
   cp "$SCRIPT_DIR/claude/ccstatusline-settings.json" ~/.claude/ccstatusline-settings.json
 
-  cp "$SCRIPT_DIR/claude/scripts/job-done.sh" ~/.claude/scripts/
-  cp "$SCRIPT_DIR/claude/scripts/notify-waiting.sh" ~/.claude/scripts/
-  cp "$SCRIPT_DIR/claude/scripts/load-env.sh" ~/.claude/scripts/
-  chmod +x ~/.claude/scripts/job-done.sh ~/.claude/scripts/notify-waiting.sh
-
   cp -r "$SCRIPT_DIR/claude/skills" ~/.claude/
 
   # Symlink settings.json so changes can be committed back to this repo
