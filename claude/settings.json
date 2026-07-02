@@ -32,26 +32,26 @@
     },
     "openai-codex": {
       "source": {
-        "source": "github",
-        "repo": "openai/codex-plugin-cc"
+        "source": "git",
+        "url": "https://github.com/openai/codex-plugin-cc.git"
       }
     },
     "context-mode": {
       "source": {
-        "source": "github",
-        "repo": "mksglu/context-mode"
+        "source": "git",
+        "url": "https://github.com/mksglu/context-mode.git"
       }
     },
     "obsidian-skills": {
       "source": {
-        "source": "github",
-        "repo": "kepano/obsidian-skills"
+        "source": "git",
+        "url": "https://github.com/kepano/obsidian-skills.git"
       }
     },
     "claude-video": {
       "source": {
-        "source": "github",
-        "repo": "bradautomates/claude-video"
+        "source": "git",
+        "url": "https://github.com/bradautomates/claude-video.git"
       }
     },
     "claude-skills-laur": {
@@ -62,39 +62,6 @@
     }
   },
   "hooks": {
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/job-done.sh",
-            "timeout": 30,
-            "statusMessage": "Sending job-done notification..."
-          }
-        ]
-      }
-    ],
-    "Notification": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/notify-waiting.sh",
-            "async": true
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/scripts/notify-waiting.sh"
-          }
-        ]
-      }
-    ],
     "SessionStart": [
       {
         "hooks": [
