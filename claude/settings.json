@@ -1,4 +1,22 @@
 {
+  "model": "sonnet",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/context-mode-cache-heal.mjs"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "npx -y ccstatusline@latest --config ~/.claude/ccstatusline-settings.json",
+    "padding": 0
+  },
   "enabledPlugins": {
     "andrej-karpathy-skills@karpathy-skills": true,
     "code-review@claude-plugins-official": true,
@@ -61,26 +79,15 @@
       }
     }
   },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/context-mode-cache-heal.mjs"
-          }
-        ]
-      }
-    ]
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "npx -y ccstatusline@latest --config ~/.claude/ccstatusline-settings.json",
-    "padding": 0
-  },
-  "effortLevel": "medium",
   "autoUpdatesChannel": "latest",
-  "skipDangerousModePermissionPrompt": true,
   "tui": "fullscreen",
-  "theme": "dark"
+  "theme": "dark",
+  "effortLevel": "medium",
+  "voiceEnabled": true,
+  "voice": {
+    "enabled": true,
+    "mode": "hold"
+  },
+  "language": "Romanian",
+  "skipDangerousModePermissionPrompt": true
 }
