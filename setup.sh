@@ -214,6 +214,11 @@ setup_hooks() {
 
   cp "$SCRIPT_DIR/claude/ccstatusline-settings.json" ~/.claude/ccstatusline-settings.json
 
+  cp "$SCRIPT_DIR/claude/scripts/job-done.sh" ~/.claude/scripts/
+  cp "$SCRIPT_DIR/claude/scripts/notify-waiting.sh" ~/.claude/scripts/
+  cp "$SCRIPT_DIR/claude/scripts/load-env.sh" ~/.claude/scripts/
+  chmod +x ~/.claude/scripts/job-done.sh ~/.claude/scripts/notify-waiting.sh
+
   cp -r "$SCRIPT_DIR/claude/skills" ~/.claude/
 
   # Symlink settings.json so changes can be committed back to this repo
@@ -266,9 +271,6 @@ initial_auth_session() {
 cleanup() {
   if command -v claude &>/dev/null; then
     echo "→ Uninstalling Claude Code..."
-    # Installed via claude.ai/install.sh (standalone binary)
-    rm -f ~/.local/bin/claude
-    # Installed via npm (user-level or system-level)
     npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
     echo "✓ Uninstalled Claude Code"
   fi
