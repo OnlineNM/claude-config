@@ -83,6 +83,19 @@ install_git() {
   fi
 }
 
+# === CURL INSTALLATION ===
+install_curl() {
+  if [[ "$(uname)" == "Darwin" ]]; then
+    return
+  fi
+  if ! command -v curl &>/dev/null; then
+    echo "→ Installing curl..."
+    sudo apt-get install -y curl
+  else
+    echo "✓ curl already installed"
+  fi
+}
+
 # === UNZIP INSTALLATION ===
 install_unzip() {
   if [[ "$(uname)" == "Darwin" ]]; then
@@ -306,6 +319,7 @@ main() {
   fi
 
   install_git
+  install_curl
   install_unzip
   install_bun
   install_nodejs
