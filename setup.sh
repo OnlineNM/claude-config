@@ -63,6 +63,17 @@ PLUGINS_MARKETPLACE=(
 )
 
 # === PREREQUISITES ===
+run_as_root() {
+  if [[ "$(id -u)" -eq 0 ]]; then
+    "$@"
+  elif command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+  else
+    echo "⚠ Root privileges are required and sudo is not available. Please run the script as root." >&2
+    exit 1
+  fi
+}
+
 configure_npm_prefix() {
   echo "→ Configuring npm global prefix..."
   mkdir -p "$HOME/.npm-global"
@@ -89,7 +100,8 @@ install_curl() {
       [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
       brew install curl
     else
-      apt-get install -y curl
+      run_as_root apt-get update
+      run_as_root apt-get install -y curl
     fi
   else
     echo "✓ curl $(curl --version | head -1 | cut -d' ' -f2) already installed"
@@ -104,7 +116,8 @@ install_git() {
       [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
       brew install git
     else
-      apt-get install -y git
+      run_as_root apt-get update
+      run_as_root apt-get install -y git
     fi
   else
     echo "✓ git $(git --version | cut -d' ' -f3) already installed"
@@ -123,8 +136,13 @@ install_nodejs() {
       fi
       brew install node
     else
-      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-      apt-get install -y nodejs
+      if [[ "$(id -u)" -eq 0 ]]; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      else
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
+      fi
+      run_as_root apt-get update
+      run_as_root apt-get install -y nodejs
     fi
   else
     echo "✓ Node.js $(node --version) already installed"
@@ -320,10 +338,10 @@ main() {
   fi
 
   cleanup
-  configure_npm_prefix
   install_curl
   install_git
   install_nodejs
+  configure_npm_prefix
   install_claude_code
   install_bun
   setup_auth
