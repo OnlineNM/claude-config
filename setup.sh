@@ -25,6 +25,12 @@ EMAIL="${CLAUDE_EMAIL:-}"
 ORG_UUID="${CLAUDE_ORG_UUID:-}"
 DISPLAY_NAME="${CLAUDE_DISPLAY_NAME:-}"
 
+if [[ "$(uname)" == "Darwin" ]]; then
+  SHELL_RC=~/.zshrc
+else
+  SHELL_RC=~/.bashrc
+fi
+
 MARKETPLACES=(
   "https://github.com/mksglu/context-mode"
   "https://github.com/openai/codex-plugin-cc"
@@ -77,6 +83,31 @@ install_git() {
   fi
 }
 
+# === UNZIP INSTALLATION ===
+install_unzip() {
+  if [[ "$(uname)" == "Darwin" ]]; then
+    return
+  fi
+  if ! command -v unzip &>/dev/null; then
+    echo "→ Installing unzip..."
+    sudo apt-get install -y unzip
+  else
+    echo "✓ unzip already installed"
+  fi
+}
+
+# === BUN INSTALLATION ===
+install_bun() {
+  if ! command -v bun &>/dev/null; then
+    echo "→ Installing Bun..."
+    curl -fsSL https://bun.com/install | bash
+    export PATH="$HOME/.bun/bin:$PATH"
+    command -v bun &>/dev/null || { echo "✗ Bun install failed"; exit 1; }
+  else
+    echo "✓ Bun $(bun --version) already installed"
+  fi
+}
+
 # === NODE.JS INSTALLATION ===
 install_nodejs() {
   if ! command -v node &>/dev/null || [[ $(node --version | cut -d'v' -f2 | cut -d'.' -f1) -lt 18 ]]; then
@@ -97,18 +128,37 @@ install_nodejs() {
   fi
 }
 
+# === NPM GLOBAL PREFIX SETUP ===
+setup_npm_global_prefix() {
+  if [[ "$(uname)" == "Darwin" ]]; then
+    return
+  fi
+  mkdir -p "$HOME/.npm-global/bin"
+  npm config set prefix "$HOME/.npm-global"
+  export PATH="$HOME/.npm-global/bin:$PATH"
+  if ! grep -q "\.npm-global/bin" "$SHELL_RC"; then
+    echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> "$SHELL_RC"
+  fi
+}
+
 # === CLAUDE CODE INSTALLATION ===
 install_claude_code() {
   if ! command -v claude &>/dev/null; then
     echo "→ Installing Claude Code..."
-    if [[ "$(uname)" == "Darwin" ]]; then
-      npm install -g @anthropic-ai/claude-code
-    else
-      sudo npm install -g @anthropic-ai/claude-code
-    fi
-  else
-    echo "✓ Claude Code $(claude --version) already installed"
+    npm install -g @anthropic-ai/claude-code
+    command -v claude &>/dev/null || { echo "✗ Claude Code install failed"; exit 1; }
   fi
+  echo "✓ Claude Code $(claude --version 2>/dev/null || echo installed)"
+}
+
+# === CLAUDISH INSTALLATION ===
+install_claudish() {
+  if ! command -v claudish &>/dev/null; then
+    echo "→ Installing claudish..."
+    npm install -g claudish
+    command -v claudish &>/dev/null || { echo "✗ claudish install failed"; exit 1; }
+  fi
+  echo "✓ claudish $(claudish --version 2>/dev/null || echo installed)"
 }
 
 # === AUTHENTICATION ===
@@ -127,13 +177,10 @@ setup_auth() {
 
   # Source ~/.claude/.env from shell config if not already present
   if [[ "$(uname)" == "Darwin" ]]; then
-    SHELL_RC=~/.zshrc
     # Ensure Homebrew is in PATH for future shells
     if ! grep -q "homebrew/bin/brew shellenv" "$SHELL_RC" 2>/dev/null; then
       echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$SHELL_RC"
     fi
-  else
-    SHELL_RC=~/.bashrc
   fi
   if ! grep -q "\.claude/\.env" "$SHELL_RC"; then
     echo '[ -f "$HOME/.claude/.env" ] && { set -a; source "$HOME/.claude/.env"; set +a; }' >> "$SHELL_RC"
@@ -223,10 +270,17 @@ cleanup() {
     rm -f ~/.local/bin/claude
     # Installed via npm (user-level or system-level)
     npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
-    if [[ "$(uname)" != "Darwin" ]]; then
-      sudo npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
-    fi
     echo "✓ Uninstalled Claude Code"
+  fi
+  if command -v claudish &>/dev/null; then
+    echo "→ Uninstalling claudish..."
+    npm uninstall -g claudish 2>/dev/null || true
+    echo "✓ Uninstalled claudish"
+  fi
+  if [[ -d ~/.claudish ]]; then
+    echo "→ Removing existing ~/.claudish..."
+    rm -rf ~/.claudish
+    echo "✓ Removed ~/.claudish"
   fi
   if [[ -d ~/.claude ]]; then
     echo "→ Removing existing ~/.claude..."
@@ -249,10 +303,14 @@ main() {
     eval "$(/opt/homebrew/bin/brew shellenv)"
   fi
 
-  cleanup
   install_git
+  install_unzip
+  install_bun
   install_nodejs
+  setup_npm_global_prefix
+  cleanup
   install_claude_code
+  install_claudish
   setup_auth
   setup_hooks
   register_marketplaces
