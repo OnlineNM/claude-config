@@ -124,6 +124,22 @@ install_git() {
   fi
 }
 
+# === JQ INSTALLATION ===
+install_jq() {
+  if ! command -v jq &>/dev/null; then
+    echo "→ Installing jq..."
+    if [[ "$(uname)" == "Darwin" ]]; then
+      [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+      brew install jq
+    else
+      run_as_root apt-get update
+      run_as_root apt-get install -y jq
+    fi
+  else
+    echo "✓ jq $(jq --version 2>/dev/null || echo installed) already installed"
+  fi
+}
+
 # === NODE.JS INSTALLATION ===
 install_nodejs() {
   if ! command -v node &>/dev/null || [[ $(node --version | cut -d'v' -f2 | cut -d'.' -f1) -lt 18 ]]; then
@@ -340,6 +356,7 @@ main() {
   cleanup
   install_curl
   install_git
+  install_jq
   install_nodejs
   configure_npm_prefix
   install_claude_code

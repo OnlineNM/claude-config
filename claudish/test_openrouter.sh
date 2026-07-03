@@ -17,6 +17,46 @@ have_timeout() {
   command -v timeout >/dev/null 2>&1
 }
 
+load_model_rows() {
+  if command -v jq >/dev/null 2>&1; then
+    if [[ -n "$PROFILE_FILTER" ]]; then
+      jq -r --arg profile "$PROFILE_FILTER" '.profiles[$profile].models | to_entries[] | [$profile, .key, .value] | @tsv' "$CONFIG_FILE" 2>/dev/null
+    else
+      jq -r '.profiles | to_entries[] | .key as $profile | .value.models | to_entries[] | [$profile, .key, .value] | @tsv' "$CONFIG_FILE" 2>/dev/null
+    fi
+  elif [[ "$(uname)" == "Darwin" ]] && command -v python3 >/dev/null 2>&1; then
+    if [[ -n "$PROFILE_FILTER" ]]; then
+      python3 - "$CONFIG_FILE" "$PROFILE_FILTER" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding='utf-8') as fh:
+    data = json.load(fh)
+
+profile = sys.argv[2]
+models = data.get('profiles', {}).get(profile, {}).get('models', {})
+for role, model in models.items():
+    print(f"{profile}\t{role}\t{model}")
+PY
+    else
+      python3 - "$CONFIG_FILE" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding='utf-8') as fh:
+    data = json.load(fh)
+
+for profile, payload in data.get('profiles', {}).items():
+    for role, model in payload.get('models', {}).items():
+        print(f"{profile}\t{role}\t{model}")
+PY
+    fi
+  else
+    echo "jq is required but was not found in PATH." >&2
+    exit 1
+  fi
+}
+
 run_one() {
   local profile="$1"
   local role="$2"
@@ -59,21 +99,16 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
   exit 1
 fi
 
-if ! command -v jq >/dev/null 2>&1; then
-  echo "jq is required but was not found in PATH." >&2
-  exit 1
-fi
-
 if ! command -v claudish >/dev/null 2>&1; then
   echo "claudish is required but was not found in PATH." >&2
   exit 1
 fi
 
-if [[ -n "$PROFILE_FILTER" ]]; then
-  mapfile -t MODEL_ROWS < <(jq -r --arg profile "$PROFILE_FILTER" '.profiles[$profile].models | to_entries[] | [$profile, .key, .value] | @tsv' "$CONFIG_FILE" 2>/dev/null)
-else
-  mapfile -t MODEL_ROWS < <(jq -r '.profiles | to_entries[] | .key as $profile | .value.models | to_entries[] | [$profile, .key, .value] | @tsv' "$CONFIG_FILE" 2>/dev/null)
-fi
+MODEL_ROWS=()
+while IFS=$'\t' read -r profile role model; do
+  [[ -z "$profile" && -z "$role" && -z "$model" ]] && continue
+  MODEL_ROWS+=("$profile"$'\t'"$role"$'\t'"$model")
+done < <(load_model_rows)
 
 if [[ ${#MODEL_ROWS[@]} -eq 0 ]]; then
   echo "No models found in $CONFIG_FILE" >&2
