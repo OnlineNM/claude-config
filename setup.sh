@@ -25,12 +25,6 @@ EMAIL="${CLAUDE_EMAIL:-}"
 ORG_UUID="${CLAUDE_ORG_UUID:-}"
 DISPLAY_NAME="${CLAUDE_DISPLAY_NAME:-}"
 
-if [[ "$(uname)" == "Darwin" ]]; then
-  SHELL_RC=~/.zshrc
-else
-  SHELL_RC=~/.bashrc
-fi
-
 MARKETPLACES=(
   "https://github.com/mksglu/context-mode"
   "https://github.com/openai/codex-plugin-cc"
@@ -83,44 +77,6 @@ install_git() {
   fi
 }
 
-# === CURL INSTALLATION ===
-install_curl() {
-  if [[ "$(uname)" == "Darwin" ]]; then
-    return
-  fi
-  if ! command -v curl &>/dev/null; then
-    echo "→ Installing curl..."
-    sudo apt-get install -y curl
-  else
-    echo "✓ curl already installed"
-  fi
-}
-
-# === UNZIP INSTALLATION ===
-install_unzip() {
-  if [[ "$(uname)" == "Darwin" ]]; then
-    return
-  fi
-  if ! command -v unzip &>/dev/null; then
-    echo "→ Installing unzip..."
-    sudo apt-get install -y unzip
-  else
-    echo "✓ unzip already installed"
-  fi
-}
-
-# === BUN INSTALLATION ===
-install_bun() {
-  if ! command -v bun &>/dev/null; then
-    echo "→ Installing Bun..."
-    curl -fsSL https://bun.com/install | bash
-    export PATH="$HOME/.bun/bin:$PATH"
-    command -v bun &>/dev/null || { echo "✗ Bun install failed"; exit 1; }
-  else
-    echo "✓ Bun $(bun --version) already installed"
-  fi
-}
-
 # === NODE.JS INSTALLATION ===
 install_nodejs() {
   if ! command -v node &>/dev/null || [[ $(node --version | cut -d'v' -f2 | cut -d'.' -f1) -lt 18 ]]; then
@@ -141,37 +97,41 @@ install_nodejs() {
   fi
 }
 
-# === NPM GLOBAL PREFIX SETUP ===
-setup_npm_global_prefix() {
-  if [[ "$(uname)" == "Darwin" ]]; then
-    return
-  fi
-  mkdir -p "$HOME/.npm-global/bin"
-  npm config set prefix "$HOME/.npm-global"
-  export PATH="$HOME/.npm-global/bin:$PATH"
-  if ! grep -q "\.npm-global/bin" "$SHELL_RC"; then
-    echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> "$SHELL_RC"
-  fi
-}
-
 # === CLAUDE CODE INSTALLATION ===
 install_claude_code() {
   if ! command -v claude &>/dev/null; then
     echo "→ Installing Claude Code..."
-    npm install -g @anthropic-ai/claude-code
-    command -v claude &>/dev/null || { echo "✗ Claude Code install failed"; exit 1; }
+    if [[ "$(uname)" == "Darwin" ]]; then
+      npm install -g @anthropic-ai/claude-code
+    else
+      sudo npm install -g @anthropic-ai/claude-code
+    fi
+  else
+    echo "✓ Claude Code $(claude --version) already installed"
   fi
-  echo "✓ Claude Code $(claude --version 2>/dev/null || echo installed)"
 }
 
 # === CLAUDISH INSTALLATION ===
 install_claudish() {
   if ! command -v claudish &>/dev/null; then
     echo "→ Installing claudish..."
-    npm install -g claudish
-    command -v claudish &>/dev/null || { echo "✗ claudish install failed"; exit 1; }
+    if [[ "$(uname)" == "Darwin" ]]; then
+      npm install -g claudish
+    else
+      sudo npm install -g claudish
+    fi
+  else
+    echo "✓ claudish already installed"
   fi
-  echo "✓ claudish $(claudish --version 2>/dev/null || echo installed)"
+}
+
+setup_claudish_files() {
+  echo "→ Configuring claudish files..."
+  mkdir -p ~/.claudish
+  cp "$SCRIPT_DIR/claudish/config.json" ~/.claudish/config.json
+  cp "$SCRIPT_DIR/claudish/test_openrouter.sh" ~/.claudish/test_openrouter.sh
+  chmod +x ~/.claudish/test_openrouter.sh
+  echo "✓ claudish files installed"
 }
 
 # === AUTHENTICATION ===
@@ -190,10 +150,13 @@ setup_auth() {
 
   # Source ~/.claude/.env from shell config if not already present
   if [[ "$(uname)" == "Darwin" ]]; then
+    SHELL_RC=~/.zshrc
     # Ensure Homebrew is in PATH for future shells
     if ! grep -q "homebrew/bin/brew shellenv" "$SHELL_RC" 2>/dev/null; then
       echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$SHELL_RC"
     fi
+  else
+    SHELL_RC=~/.bashrc
   fi
   if ! grep -q "\.claude/\.env" "$SHELL_RC"; then
     echo '[ -f "$HOME/.claude/.env" ] && { set -a; source "$HOME/.claude/.env"; set +a; }' >> "$SHELL_RC"
@@ -227,21 +190,7 @@ setup_hooks() {
 
   cp "$SCRIPT_DIR/claude/ccstatusline-settings.json" ~/.claude/ccstatusline-settings.json
 
-  
-
   cp -r "$SCRIPT_DIR/claude/skills" ~/.claude/
-
-  # Copy additional scripts if present
-  if [[ -d "$SCRIPT_DIR/claude/scripts" ]]; then
-    shopt -s nullglob
-    scripts=("$SCRIPT_DIR/claude/scripts/"*)
-    if (( ${#scripts[@]} )); then
-      echo "→ Copying scripts from $SCRIPT_DIR/claude/scripts to ~/.claude/scripts/"
-      cp "${scripts[@]}" ~/.claude/scripts/ || true
-      chmod +x ~/.claude/scripts/* 2>/dev/null || true
-    fi
-    shopt -u nullglob
-  fi
 
   # Symlink settings.json so changes can be committed back to this repo
   ln -sf "$SCRIPT_DIR/claude/settings.json" ~/.claude/settings.json
@@ -293,18 +242,14 @@ initial_auth_session() {
 cleanup() {
   if command -v claude &>/dev/null; then
     echo "→ Uninstalling Claude Code..."
+    # Installed via claude.ai/install.sh (standalone binary)
+    rm -f ~/.local/bin/claude
+    # Installed via npm (user-level or system-level)
     npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
+    if [[ "$(uname)" != "Darwin" ]]; then
+      sudo npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
+    fi
     echo "✓ Uninstalled Claude Code"
-  fi
-  if command -v claudish &>/dev/null; then
-    echo "→ Uninstalling claudish..."
-    npm uninstall -g claudish 2>/dev/null || true
-    echo "✓ Uninstalled claudish"
-  fi
-  if [[ -d ~/.claudish ]]; then
-    echo "→ Removing existing ~/.claudish..."
-    rm -rf ~/.claudish
-    echo "✓ Removed ~/.claudish"
   fi
   if [[ -d ~/.claude ]]; then
     echo "→ Removing existing ~/.claude..."
@@ -327,15 +272,12 @@ main() {
     eval "$(/opt/homebrew/bin/brew shellenv)"
   fi
 
-  install_git
-  install_curl
-  install_unzip
-  install_bun
-  install_nodejs
-  setup_npm_global_prefix
   cleanup
+  install_git
+  install_nodejs
   install_claude_code
   install_claudish
+  setup_claudish_files
   setup_auth
   setup_hooks
   register_marketplaces

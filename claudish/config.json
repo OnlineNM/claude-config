@@ -1,0 +1,42 @@
+{
+  "version": "1.0.0",
+  "defaultProfile": "balanced",
+  "profiles": {
+    "frontier": {
+      "name": "frontier",
+      "models": {
+        "opus":     "or@google/gemini-3.1-pro-preview",
+        "sonnet":   "or@z-ai/glm-5.2",
+        "haiku":    "or@deepseek/deepseek-v4-flash",
+        "subagent": "or@qwen/qwen3-coder"
+      }
+    },
+    "balanced": {
+      "name": "balanced",
+      "models": {
+        "opus":     "or@google/gemini-2.5-pro",
+        "sonnet":   "or@deepseek/deepseek-v4-flash",
+        "haiku":    "or@meta-llama/llama-4-scout",
+        "subagent": "or@google/gemini-2.5-flash"
+      }
+    },
+    "economy": {
+      "name": "economy",
+      "models": {
+        "opus":     "or@deepseek/deepseek-v4-flash",
+        "sonnet":   "or@qwen/qwen3-coder",
+        "haiku":    "or@google/gemini-2.5-flash-lite",
+        "subagent": "or@meta-llama/llama-4-scout"
+      }
+    },
+    "free": {
+      "name": "free",
+      "models": {
+        "opus":     "or@openrouter/free",
+        "sonnet":   "or@qwen/qwen3-coder:free",
+        "haiku":    "or@meta-llama/llama-3.3-70b-instruct:free",
+        "subagent": "or@deepseek/deepseek-v4-flash:free"
+      }
+    }
+  }
+}
