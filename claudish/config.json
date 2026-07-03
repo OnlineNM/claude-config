@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "defaultProfile": "balanced",
+  "defaultProfile": "free",
   "profiles": {
     "frontier": {
       "name": "frontier",
