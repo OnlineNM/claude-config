@@ -62,6 +62,40 @@ PLUGINS_MARKETPLACE=(
   "pmpt@claude-skills-laur"
 )
 
+# === PREREQUISITES ===
+configure_npm_prefix() {
+  echo "→ Configuring npm global prefix..."
+  mkdir -p "$HOME/.npm-global"
+  npm config set prefix "$HOME/.npm-global"
+
+  if [[ "$(uname)" == "Darwin" ]]; then
+    SHELL_RC="$HOME/.zshrc"
+  else
+    SHELL_RC="$HOME/.bashrc"
+  fi
+
+  if ! grep -q "$HOME/.npm-global/bin" "$SHELL_RC" 2>/dev/null; then
+    echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> "$SHELL_RC"
+  fi
+
+  export PATH="$HOME/.npm-global/bin:$PATH"
+  echo "✓ npm prefix configured"
+}
+
+install_curl() {
+  if ! command -v curl &>/dev/null; then
+    echo "→ Installing curl..."
+    if [[ "$(uname)" == "Darwin" ]]; then
+      [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+      brew install curl
+    else
+      apt-get install -y curl
+    fi
+  else
+    echo "✓ curl $(curl --version | head -1 | cut -d' ' -f2) already installed"
+  fi
+}
+
 # === GIT INSTALLATION ===
 install_git() {
   if ! command -v git &>/dev/null; then
@@ -70,7 +104,7 @@ install_git() {
       [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
       brew install git
     else
-      sudo apt-get install -y git
+      apt-get install -y git
     fi
   else
     echo "✓ git $(git --version | cut -d' ' -f3) already installed"
@@ -89,8 +123,8 @@ install_nodejs() {
       fi
       brew install node
     else
-      curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-      sudo apt-get install -y nodejs
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+      apt-get install -y nodejs
     fi
   else
     echo "✓ Node.js $(node --version) already installed"
@@ -99,30 +133,34 @@ install_nodejs() {
 
 # === CLAUDE CODE INSTALLATION ===
 install_claude_code() {
-  if ! command -v claude &>/dev/null; then
-    echo "→ Installing Claude Code..."
+  echo "→ Reinstalling Claude Code..."
+  npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
+  npm install -g @anthropic-ai/claude-code
+}
+
+# === BUN INSTALLATION ===
+install_bun() {
+  if ! command -v bun &>/dev/null; then
+    echo "→ Installing Bun..."
     if [[ "$(uname)" == "Darwin" ]]; then
-      npm install -g @anthropic-ai/claude-code
+      curl -fsSL https://bun.sh/install | bash
+      export BUN_INSTALL="$HOME/.bun"
+      export PATH="$BUN_INSTALL/bin:$PATH"
     else
-      sudo npm install -g @anthropic-ai/claude-code
+      curl -fsSL https://bun.sh/install | bash
+      export BUN_INSTALL="$HOME/.bun"
+      export PATH="$BUN_INSTALL/bin:$PATH"
     fi
   else
-    echo "✓ Claude Code $(claude --version) already installed"
+    echo "✓ Bun already installed"
   fi
 }
 
 # === CLAUDISH INSTALLATION ===
 install_claudish() {
-  if ! command -v claudish &>/dev/null; then
-    echo "→ Installing claudish..."
-    if [[ "$(uname)" == "Darwin" ]]; then
-      npm install -g claudish
-    else
-      sudo npm install -g claudish
-    fi
-  else
-    echo "✓ claudish already installed"
-  fi
+  echo "→ Reinstalling claudish..."
+  npm uninstall -g claudish 2>/dev/null || true
+  npm install -g claudish
 }
 
 setup_claudish_files() {
@@ -240,22 +278,31 @@ initial_auth_session() {
 
 # === CLEANUP ===
 cleanup() {
-  if command -v claude &>/dev/null; then
-    echo "→ Uninstalling Claude Code..."
-    # Installed via claude.ai/install.sh (standalone binary)
-    rm -f ~/.local/bin/claude
-    # Installed via npm (user-level or system-level)
-    npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
-    if [[ "$(uname)" != "Darwin" ]]; then
-      sudo npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
-    fi
-    echo "✓ Uninstalled Claude Code"
-  fi
+  local npm_prefix="${NPM_CONFIG_PREFIX:-$HOME/.npm-global}"
+  local claude_bin="$npm_prefix/bin/claude"
+  local claudish_bin="$npm_prefix/bin/claudish"
+  local local_claude_bin="$HOME/.local/bin/claude"
+  local local_claudish_bin="$HOME/.local/bin/claudish"
+  local bun_claude_bin="$HOME/.bun/bin/claude"
+  local bun_claudish_bin="$HOME/.bun/bin/claudish"
+
+  echo "→ Removing existing Claude and claudish installation..."
+  rm -f "$local_claude_bin" "$local_claudish_bin" "$claude_bin" "$claudish_bin" "$bun_claude_bin" "$bun_claudish_bin" 2>/dev/null || true
+  npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
+  npm uninstall -g claudish 2>/dev/null || true
+
   if [[ -d ~/.claude ]]; then
     echo "→ Removing existing ~/.claude..."
     rm -rf ~/.claude
     echo "✓ Removed ~/.claude"
   fi
+
+  if [[ -d ~/.claudish ]]; then
+    echo "→ Removing existing ~/.claudish..."
+    rm -rf ~/.claudish
+    echo "✓ Removed ~/.claudish"
+  fi
+
   if [[ -f ~/.claude.json ]]; then
     rm -f ~/.claude.json
     echo "✓ Removed ~/.claude.json"
@@ -273,17 +320,20 @@ main() {
   fi
 
   cleanup
+  configure_npm_prefix
+  install_curl
   install_git
   install_nodejs
   install_claude_code
-  install_claudish
-  setup_claudish_files
+  install_bun
   setup_auth
   setup_hooks
   register_marketplaces
   install_marketplace_plugins
   initial_auth_session
   install_official_plugins
+  install_claudish
+  setup_claudish_files
 
   echo ""
   echo "=== Setup complete! ==="

@@ -80,7 +80,11 @@ if [[ ${#MODEL_ROWS[@]} -eq 0 ]]; then
   exit 1
 fi
 
-for row in "${MODEL_ROWS[@]}"; do
+for index in "${!MODEL_ROWS[@]}"; do
+  row="${MODEL_ROWS[$index]}"
   IFS=$'\t' read -r profile role model <<< "$row"
   run_one "$profile" "$role" "$model"
+  if [[ $index -lt $(( ${#MODEL_ROWS[@]} - 1 )) ]]; then
+    echo ""
+  fi
 done
