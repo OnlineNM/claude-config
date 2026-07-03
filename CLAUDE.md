@@ -33,7 +33,7 @@ There are no tests, build steps, or linters. Validate changes by running the scr
 ## Key files
 
 - **`claude/settings.json`** — portable Claude Code settings: plugins, hooks, status line, marketplaces. This is what gets deployed to `~/.claude/settings.json`.
-- **`claude/scripts/`** — hook scripts for Telegram notifications (`job-done.sh`, `notify-waiting.sh`). Both source `load-env.sh` which reads `~/.claude/.env`.
+- **`claude/scripts/`** — hook scripts.
 - **`claude/hooks/context-mode-cache-heal.mjs`** — runs at SessionStart to fix the `context-mode` plugin cache after Claude Code auto-updates.
 - **`claude/ccstatusline-settings.json`** — layout config for the terminal status bar.
 - **`claude/commands/`** — custom slash commands (currently empty).
@@ -56,4 +56,4 @@ Marketplace must be registered before its plugins — order matters.
 
 ## Credentials
 
-All secrets live in `.env` (gitignored). The script copies it to `~/.claude/.env` on the target machine, which is sourced by the shell RC file and by hook scripts at runtime.
+All secrets live in `.env` (gitignored). The script copies it to `~/.claude/.env` on the target machine, which is sourced by the shell RC file at runtime.

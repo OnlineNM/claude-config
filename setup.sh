@@ -227,12 +227,21 @@ setup_hooks() {
 
   cp "$SCRIPT_DIR/claude/ccstatusline-settings.json" ~/.claude/ccstatusline-settings.json
 
-  cp "$SCRIPT_DIR/claude/scripts/job-done.sh" ~/.claude/scripts/
-  cp "$SCRIPT_DIR/claude/scripts/notify-waiting.sh" ~/.claude/scripts/
-  cp "$SCRIPT_DIR/claude/scripts/load-env.sh" ~/.claude/scripts/
-  chmod +x ~/.claude/scripts/job-done.sh ~/.claude/scripts/notify-waiting.sh
+  
 
   cp -r "$SCRIPT_DIR/claude/skills" ~/.claude/
+
+  # Copy additional scripts if present
+  if [[ -d "$SCRIPT_DIR/claude/scripts" ]]; then
+    shopt -s nullglob
+    scripts=("$SCRIPT_DIR/claude/scripts/"*)
+    if (( ${#scripts[@]} )); then
+      echo "→ Copying scripts from $SCRIPT_DIR/claude/scripts to ~/.claude/scripts/"
+      cp "${scripts[@]}" ~/.claude/scripts/ || true
+      chmod +x ~/.claude/scripts/* 2>/dev/null || true
+    fi
+    shopt -u nullglob
+  fi
 
   # Symlink settings.json so changes can be committed back to this repo
   ln -sf "$SCRIPT_DIR/claude/settings.json" ~/.claude/settings.json
