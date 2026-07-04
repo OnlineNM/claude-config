@@ -37,6 +37,15 @@
         "haiku":    "or@meta-llama/llama-3.3-70b-instruct:free",
         "subagent": "or@deepseek/deepseek-v4-flash:free"
       }
+    },
+    "local": {
+      "name": "local",
+      "models": {
+        "opus":     "ollama@qwen2.5-coder:14b-64k",
+        "sonnet":   "ollama@llama3.1:8b-64k",
+        "haiku":    "ollama@qwen2.5-coder:7b-64k",
+        "subagent": "ollama@phi4-mini-64k:latest"
+      }
     }
   }
 }

@@ -62,20 +62,59 @@ PLUGINS_MARKETPLACE=(
   "pmpt@claude-skills-laur"
 )
 
-# === PREREQUISITES ===
+prerequisites() {
+  echo "Installing prerequisites..."
+  if [[ "$(uname)" == "Darwin" ]]; then
+    macos
+  else
+    linux
+  fi
+
+  configure_npm_prefix
+
+  # Install bun
+  curl -fsSL https://bun.sh/install | bash
+  export BUN_INSTALL="$HOME/.bun"
+  export PATH="$BUN_INSTALL/bin:$PATH"
+
+  echo
+}
+
+linux() {
+  run_as_root apt-get update
+  run_as_root apt-get install -y curl git jq nodejs npm expect
+}
+
+macos() {
+  if ! command -v brew &>/dev/null; then
+    echo "Installing Homebrew..."
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  fi
+
+  # Ensure Homebrew is in PATH for future shells
+  SHELL_RC=~/.zshrc
+  if ! grep -q "homebrew/bin/brew shellenv" "$SHELL_RC" 2>/dev/null; then
+    echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$SHELL_RC"
+  fi
+  [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
+
+  brew install curl git jq node npm expect
+}
+
 run_as_root() {
   if [[ "$(id -u)" -eq 0 ]]; then
     "$@"
   elif command -v sudo >/dev/null 2>&1; then
     sudo "$@"
   else
-    echo "⚠ Root privileges are required and sudo is not available. Please run the script as root." >&2
+    echo "Root privileges are required and sudo is not available. Please run the script as root." >&2
     exit 1
   fi
 }
 
 configure_npm_prefix() {
-  echo "→ Configuring npm global prefix..."
+  echo "Configuring npm global prefix..."
   mkdir -p "$HOME/.npm-global"
   npm config set prefix "$HOME/.npm-global"
 
@@ -90,130 +129,58 @@ configure_npm_prefix() {
   fi
 
   export PATH="$HOME/.npm-global/bin:$PATH"
-  echo "✓ npm prefix configured"
+  echo "npm prefix configured"
 }
 
-install_curl() {
-  if ! command -v curl &>/dev/null; then
-    echo "→ Installing curl..."
-    if [[ "$(uname)" == "Darwin" ]]; then
-      [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
-      brew install curl
-    else
-      run_as_root apt-get update
-      run_as_root apt-get install -y curl
-    fi
-  else
-    echo "✓ curl $(curl --version | head -1 | cut -d' ' -f2) already installed"
-  fi
-}
+cleanup() {
+  echo "Cleaning up existing installations..."
 
-# === GIT INSTALLATION ===
-install_git() {
-  if ! command -v git &>/dev/null; then
-    echo "→ Installing git..."
-    if [[ "$(uname)" == "Darwin" ]]; then
-      [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
-      brew install git
-    else
-      run_as_root apt-get update
-      run_as_root apt-get install -y git
-    fi
-  else
-    echo "✓ git $(git --version | cut -d' ' -f3) already installed"
-  fi
-}
+  local npm_prefix="${NPM_CONFIG_PREFIX:-$HOME/.npm-global}"
+  local claude_bin="$npm_prefix/bin/claude"
+  local claudish_bin="$npm_prefix/bin/claudish"
+  local local_claude_bin="$HOME/.local/bin/claude"
+  local local_claudish_bin="$HOME/.local/bin/claudish"
+  local bun_claude_bin="$HOME/.bun/bin/claude"
+  local bun_claudish_bin="$HOME/.bun/bin/claudish"
 
-# === JQ INSTALLATION ===
-install_jq() {
-  if ! command -v jq &>/dev/null; then
-    echo "→ Installing jq..."
-    if [[ "$(uname)" == "Darwin" ]]; then
-      [[ -x /opt/homebrew/bin/brew ]] && eval "$(/opt/homebrew/bin/brew shellenv)"
-      brew install jq
-    else
-      run_as_root apt-get update
-      run_as_root apt-get install -y jq
-    fi
-  else
-    echo "✓ jq $(jq --version 2>/dev/null || echo installed) already installed"
-  fi
-}
+  echo "Removing existing Claude and claudish installation..."
+  rm -f "$local_claude_bin" "$local_claudish_bin" "$claude_bin" "$claudish_bin" "$bun_claude_bin" "$bun_claudish_bin" 2>/dev/null || true
 
-# === NODE.JS INSTALLATION ===
-install_nodejs() {
-  if ! command -v node &>/dev/null || [[ $(node --version | cut -d'v' -f2 | cut -d'.' -f1) -lt 18 ]]; then
-    echo "→ Installing Node.js..."
-    if [[ "$(uname)" == "Darwin" ]]; then
-      if ! command -v brew &>/dev/null; then
-        echo "→ Installing Homebrew..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        eval "$(/opt/homebrew/bin/brew shellenv)"
-      fi
-      brew install node
-    else
-      if [[ "$(id -u)" -eq 0 ]]; then
-        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-      else
-        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
-      fi
-      run_as_root apt-get update
-      run_as_root apt-get install -y nodejs
-    fi
-  else
-    echo "✓ Node.js $(node --version) already installed"
-  fi
-}
-
-# === CLAUDE CODE INSTALLATION ===
-install_claude_code() {
-  echo "→ Reinstalling Claude Code..."
   npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
-  npm install -g @anthropic-ai/claude-code
-}
-
-# === BUN INSTALLATION ===
-install_bun() {
-  if ! command -v bun &>/dev/null; then
-    echo "→ Installing Bun..."
-    if [[ "$(uname)" == "Darwin" ]]; then
-      curl -fsSL https://bun.sh/install | bash
-      export BUN_INSTALL="$HOME/.bun"
-      export PATH="$BUN_INSTALL/bin:$PATH"
-    else
-      curl -fsSL https://bun.sh/install | bash
-      export BUN_INSTALL="$HOME/.bun"
-      export PATH="$BUN_INSTALL/bin:$PATH"
-    fi
-  else
-    echo "✓ Bun already installed"
+  if [[ -d ~/.claude ]]; then
+    echo "Removing existing ~/.claude..."
+    rm -rf ~/.claude
+    echo "Removed ~/.claude"
   fi
-}
 
-# === CLAUDISH INSTALLATION ===
-install_claudish() {
-  echo "→ Reinstalling claudish..."
+  if [[ -f ~/.claude.json ]]; then
+    rm -f ~/.claude.json
+    echo "Removed ~/.claude.json"
+  fi
+
   npm uninstall -g claudish 2>/dev/null || true
-  npm install -g claudish
+  if [[ -d ~/.claudish ]]; then
+    echo "Removing existing ~/.claudish..."
+    rm -rf ~/.claudish
+    echo "Removed ~/.claudish"
+  fi
+
+  echo
 }
 
-setup_claudish_files() {
-  echo "→ Configuring claudish files..."
-  mkdir -p ~/.claudish
-  cp "$SCRIPT_DIR/claudish/config.json" ~/.claudish/config.json
-  cp "$SCRIPT_DIR/claudish/test_openrouter.sh" ~/.claudish/test_openrouter.sh
-  chmod +x ~/.claudish/test_openrouter.sh
-  echo "✓ claudish files installed"
+install_claude_code() {
+  echo "Installing Claude Code..."
+  npm install -g @anthropic-ai/claude-code
+  echo
 }
 
-# === AUTHENTICATION ===
-setup_auth() {
+claude_code_auth() {
   if [[ -z "$CLAUDE_OAUTH_TOKEN" ]]; then
-    echo "⚠ CLAUDE_CODE_OAUTH_TOKEN is not set. Manual authentication will be required."
+    echo "CLAUDE_OAUTH_TOKEN is not set. Manual authentication will be required."
     return
   fi
 
-  echo "→ Setting up authentication..."
+  echo "Setting up authentication..."
 
   # Copy .env to ~/.claude/.env
   mkdir -p ~/.claude
@@ -223,13 +190,10 @@ setup_auth() {
   # Source ~/.claude/.env from shell config if not already present
   if [[ "$(uname)" == "Darwin" ]]; then
     SHELL_RC=~/.zshrc
-    # Ensure Homebrew is in PATH for future shells
-    if ! grep -q "homebrew/bin/brew shellenv" "$SHELL_RC" 2>/dev/null; then
-      echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> "$SHELL_RC"
-    fi
   else
     SHELL_RC=~/.bashrc
   fi
+
   if ! grep -q "\.claude/\.env" "$SHELL_RC"; then
     echo '[ -f "$HOME/.claude/.env" ] && { set -a; source "$HOME/.claude/.env"; set +a; }' >> "$SHELL_RC"
   fi
@@ -249,126 +213,111 @@ setup_auth() {
 }
 EOF
   chmod 600 ~/.claude.json
-  echo "✓ Authentication configured"
+  echo "Authentication configured"
+  echo
 }
 
-# === HOOKS & SCRIPTS SETUP ===
 setup_hooks() {
-  echo "→ Installing hooks and scripts..."
+  echo "Installing hooks and scripts..."
   mkdir -p ~/.claude/hooks ~/.claude/scripts
 
   cp "$SCRIPT_DIR/claude/hooks/context-mode-cache-heal.mjs" ~/.claude/hooks/
   chmod +x ~/.claude/hooks/context-mode-cache-heal.mjs
 
   cp "$SCRIPT_DIR/claude/ccstatusline-settings.json" ~/.claude/ccstatusline-settings.json
-
   cp -r "$SCRIPT_DIR/claude/skills" ~/.claude/
+  
+  # # Symlink settings.json so changes can be committed back to this repo
+  # ln -sf "$SCRIPT_DIR/claude/settings.json" ~/.claude/settings.json
+  cp "$SCRIPT_DIR/claude/settings.json" ~/.claude/settings.json
 
-  # Symlink settings.json so changes can be committed back to this repo
-  ln -sf "$SCRIPT_DIR/claude/settings.json" ~/.claude/settings.json
-
-  echo "✓ Hooks and scripts installed"
+  echo "Hooks and scripts installed"
+  echo
 }
 
-# === MARKETPLACE REGISTRATION ===
 register_marketplaces() {
-  echo "→ Registering marketplaces..."
+  echo "Registering marketplaces..."
   for url in "${MARKETPLACES[@]}"; do
-    echo "  → $url"
+    echo "$url"
     CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude plugin marketplace add "$url" 2>/dev/null || \
-      echo "  ⚠ Could not register marketplace $url (may already exist)"
+      echo "Could not register marketplace $url (may already exist)"
   done
+  echo "Marketplaces registered"
+  echo
 }
 
-# === PLUGINS INSTALLATION ===
 install_marketplace_plugins() {
-  echo "→ Installing marketplace plugins..."
+  echo "Installing marketplace plugins..."
   for plugin in "${PLUGINS_MARKETPLACE[@]}"; do
-    echo "  → $plugin"
+    echo "$plugin"
     CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude plugin install "$plugin" --scope user 2>/dev/null || \
-      echo "  ⚠ Could not install $plugin"
+      echo "Could not install $plugin"
   done
+  echo "Marketplace plugins installed"
+  echo
+}
+
+initial_auth_session() {
+  echo "Starting Claude for initial authentication..."
+
+  # Start Claude in a background process to establish the initial authentication session
+  spawn CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude
+
+  # Set the timeout to 30 seconds
+  set timeout 30
+  expect default
+  
+  # Send the exit command followed by Enter (\r)
+  send "/quit\r"
+  
+  # Wait for the process to fully exit
+  expect eof
+
+  echo "Resuming setup..."
+  echo
 }
 
 install_official_plugins() {
-  echo "→ Installing official plugins..."
+  echo "Installing official plugins..."
   for plugin in "${PLUGINS_OFFICIAL[@]}"; do
-    echo "  → $plugin"
+    echo "$plugin"
     CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude plugin install "$plugin" --scope user 2>/dev/null || \
-      echo "  ⚠ Could not install $plugin"
+      echo "Could not install $plugin"
   done
+  echo "Official plugins installed"
+  echo
 }
 
-# === INITIAL AUTH SESSION ===
-initial_auth_session() {
-  echo ""
-  echo "→ Starting Claude for initial authentication..."
-  echo "  Once Claude loads and you see you are logged in, type /quit to continue setup."
-  echo ""
-  CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude
-  echo ""
-  echo "→ Resuming setup..."
+install_claudish() {
+  echo "Installing claudish..."
+  npm install -g claudish
+  echo
 }
 
-# === CLEANUP ===
-cleanup() {
-  local npm_prefix="${NPM_CONFIG_PREFIX:-$HOME/.npm-global}"
-  local claude_bin="$npm_prefix/bin/claude"
-  local claudish_bin="$npm_prefix/bin/claudish"
-  local local_claude_bin="$HOME/.local/bin/claude"
-  local local_claudish_bin="$HOME/.local/bin/claudish"
-  local bun_claude_bin="$HOME/.bun/bin/claude"
-  local bun_claudish_bin="$HOME/.bun/bin/claudish"
-
-  echo "→ Removing existing Claude and claudish installation..."
-  rm -f "$local_claude_bin" "$local_claudish_bin" "$claude_bin" "$claudish_bin" "$bun_claude_bin" "$bun_claudish_bin" 2>/dev/null || true
-  npm uninstall -g @anthropic-ai/claude-code 2>/dev/null || true
-  npm uninstall -g claudish 2>/dev/null || true
-
-  if [[ -d ~/.claude ]]; then
-    echo "→ Removing existing ~/.claude..."
-    rm -rf ~/.claude
-    echo "✓ Removed ~/.claude"
-  fi
-
-  if [[ -d ~/.claudish ]]; then
-    echo "→ Removing existing ~/.claudish..."
-    rm -rf ~/.claudish
-    echo "✓ Removed ~/.claudish"
-  fi
-
-  if [[ -f ~/.claude.json ]]; then
-    rm -f ~/.claude.json
-    echo "✓ Removed ~/.claude.json"
-  fi
+setup_claudish() {
+  echo "Configuring claudish files..."
+  mkdir -p ~/.claudish
+  cp "$SCRIPT_DIR/claudish/config.json" ~/.claudish/config.json
+  cp "$SCRIPT_DIR/claudish/test_openrouter.sh" ~/.claudish/test_openrouter.sh
+  chmod +x ~/.claudish/test_openrouter.sh
+  echo
 }
 
-# === MAIN ===
 main() {
-  echo "=== Claude Code Setup ==="
+  echo "=== Claude Code /Claudish Setup ==="
   echo ""
 
-  # Ensure Homebrew is in PATH on macOS
-  if [[ "$(uname)" == "Darwin" ]] && [[ -x /opt/homebrew/bin/brew ]]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  fi
-
+  prerequisites
   cleanup
-  install_curl
-  install_git
-  install_jq
-  install_nodejs
-  configure_npm_prefix
   install_claude_code
-  install_bun
-  setup_auth
+  claude_code_auth
   setup_hooks
   register_marketplaces
   install_marketplace_plugins
   initial_auth_session
   install_official_plugins
   install_claudish
-  setup_claudish_files
+  setup_claudish
 
   echo ""
   echo "=== Setup complete! ==="
