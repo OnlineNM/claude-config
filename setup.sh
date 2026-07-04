@@ -82,7 +82,15 @@ prerequisites() {
 
 linux() {
   run_as_root apt-get update
-  run_as_root apt-get install -y curl git jq nodejs npm expect
+  run_as_root apt-get install -y curl git jq ca-certificates gnupg expect
+
+  if [[ "$(id -u)" -eq 0 ]]; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  else
+    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -
+  fi
+  run_as_root apt-get update
+  run_as_root apt-get install -y nodejs
 }
 
 macos() {
@@ -260,18 +268,23 @@ install_marketplace_plugins() {
 initial_auth_session() {
   echo "Starting Claude for initial authentication..."
 
-  # Start Claude in a background process to establish the initial authentication session
-  spawn CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude
+  if ! command -v expect >/dev/null 2>&1; then
+    echo "expect is not installed; skipping the initial authentication session."
+    echo "Resuming setup..."
+    echo
+    return 0
+  fi
 
-  # Set the timeout to 30 seconds
-  set timeout 30
-  expect default
-  
-  # Send the exit command followed by Enter (\r)
-  send "/quit\r"
-  
-  # Wait for the process to fully exit
-  expect eof
+  expect <<EOF
+set timeout 45
+log_user 0
+spawn env CLAUDE_CODE_OAUTH_TOKEN="$CLAUDE_OAUTH_TOKEN" claude
+sleep 10
+send "\r"
+sleep 30
+send "/quit\r"
+expect eof
+EOF
 
   echo "Resuming setup..."
   echo

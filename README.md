@@ -1,12 +1,14 @@
 # claude-config
 
-Provisioning script and configuration files for Claude Code on Linux and macOS.
+Provisioning script and configuration files for Claude Code and Claudish on Linux and macOS.
 
 ## What this does
 
 Runs a single script on a new server to get Claude Code fully configured:
-- Installs git, Node.js, and Claude Code
-- Authenticates without manual onboarding
+- Installs prerequisites such as git, curl, jq, and Expect
+- Installs Node.js on Linux via NodeSource and on macOS via Homebrew
+- Installs Claude Code and configures npm to use a user-scoped global prefix
+- Creates the Claude authentication and onboarding files automatically
 - Copies hooks, scripts, and configuration files
 - Registers plugin marketplaces and installs plugins
 - Optionally syncs dotfiles from a git repo
@@ -17,16 +19,16 @@ Runs a single script on a new server to get Claude Code fully configured:
 .
 ├── setup.sh                        # Provisioning script
 ├── .env.sample                     # Template for credentials
-└── claude/
-    ├── settings.json               # Claude Code settings (plugins, hooks, status line)
-    ├── ccstatusline-settings.json  # Status bar layout configuration
-    ├── commands/                   # Custom slash commands (empty — add .md files here)
-    ├── hooks/
-    │   └── context-mode-cache-heal.mjs  # Fixes context-mode after Claude Code auto-updates
-    └── scripts/
-        ├── load-env.sh             # Shared env loader for hook scripts
-        ├── job-done.sh             # Sends Telegram notification when task completes
-        └── notify-waiting.sh       # Sends Telegram notification when Claude needs input
+├── claude/
+│   ├── settings.json               # Claude Code settings (plugins, hooks, status line)
+│   ├── ccstatusline-settings.json  # Status bar layout configuration
+│   ├── commands/                   # Custom slash commands (empty — add .md files here)
+│   ├── hooks/
+│   │   └── context-mode-cache-heal.mjs  # Fixes context-mode after Claude Code auto-updates
+│   └── skills/                     # Custom Claude skills
+├── claudish/
+│   ├── config.json                 # Claudish configuration
+│   └── test_openrouter.sh          # OpenRouter test helper
 ```
 
 ## Setup
@@ -67,6 +69,17 @@ source ~/.bashrc && claude   # Linux
 source ~/.zshrc && claude    # macOS
 ```
 
+On Linux, the script installs Node.js using NodeSource, configures npm for a user-scoped prefix under ~/.npm-global, and runs a short automated Claude session to establish authentication before continuing.
+
+## Claudish
+
+The setup script also installs and configures Claudish:
+- installs the `claudish` npm package globally
+- copies the local configuration from [claudish/config.json](claudish/config.json)
+- installs the helper script [claudish/test_openrouter.sh](claudish/test_openrouter.sh) and makes it executable
+
+You can use it alongside Claude Code for the OpenRouter-based workflow defined in the repository.
+
 ## Upgrade Claude Code
 
 ```bash
@@ -75,7 +88,7 @@ npm install -g @anthropic-ai/claude-code@latest
 
 ## Notes
 
-- `setup.sh` deletes `~/.claude/` before installing — existing sessions and plugin cache will be lost
+- `setup.sh` deletes `~/.claude/` and `~/.claudish/` before installing — existing sessions, plugin cache, and claudish files will be lost
 - Credentials are copied to `~/.claude/.env` and sourced from the shell config
 - Hook scripts send Telegram notifications — requires `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in `.env`
 - Dotfiles repo is optional; if set, `setup.sh` clones it and symlinks `claude/settings.json` from it
