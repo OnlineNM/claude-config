@@ -41,10 +41,10 @@
     "local": {
       "name": "local",
       "models": {
-        "opus":     "ollama@qwen2.5-coder:14b-64k",
-        "sonnet":   "ollama@llama3.1:8b-64k",
-        "haiku":    "ollama@qwen2.5-coder:7b-64k",
-        "subagent": "ollama@phi4-mini-64k:latest"
+        "opus": "ollama@llama3.1:8b-64k",
+        "sonnet": "ollama@qwen2.5-coder:7b-64k",
+        "haiku": "ollama@phi4-mini-64k:latest",
+        "subagent": "ollama@mistral:7b-64k"
       }
     }
   }
