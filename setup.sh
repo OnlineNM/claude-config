@@ -310,9 +310,13 @@ install_claudish() {
 setup_claudish() {
   echo "Configuring claudish files..."
   mkdir -p ~/.claudish
+  cp "$SCRIPT_DIR/claudish/patch.js" ~/.cladish/patch.js
   cp "$SCRIPT_DIR/claudish/config.json" ~/.claudish/config.json
+  cp "$SCRIPT_DIR/claudish/cloudflare-env.sh" ~/.claudish/cloudflare-env.sh
   cp "$SCRIPT_DIR/claudish/test_openrouter.sh" ~/.claudish/test_openrouter.sh
   chmod +x ~/.claudish/test_openrouter.sh
+
+  node "$SCRIPT_DIR/claudish/patch.js"
   echo
 }
 

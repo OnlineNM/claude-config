@@ -1,7 +1,27 @@
 {
   "version": "1.0.0",
   "defaultProfile": "free",
+  "customEndpoints": {
+    "cloudflare-glm": {
+      "kind": "complex",
+      "displayName": "Cloudflare Workers AI (GLM 5.2)",
+      "transport": "openai",
+      "baseUrl": "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai",
+      "apiPath": "/v1/chat/completions",
+      "apiKey": "${CUSTOM_CLOUDFLARE_GLM_KEY}",
+      "modelPrefix": "@cf/zai-org/"
+    }
+  },
   "profiles": {
+    "cloudflare-glm": {
+      "name": "cloudflare-glm",
+      "models": {
+        "opus":     "cloudflare-glm@glm-5.2",
+        "sonnet":   "cloudflare-glm@glm-5.2",
+        "haiku":    "cloudflare-glm@glm-5.2",
+        "subagent": "cloudflare-glm@glm-5.2"
+      }
+    },
     "frontier": {
       "name": "frontier",
       "models": {
