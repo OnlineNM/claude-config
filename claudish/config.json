@@ -22,6 +22,15 @@
         "subagent": "cloudflare-glm@glm-5.2"
       }
     },
+   "glm-openrouter": {
+      "name": "glm-openrouter",
+      "models": {
+        "opus":     "or@z-ai/glm-5.2",
+        "sonnet":   "or@z-ai/glm-5-turbo",
+        "haiku":    "or@z-ai/glm-4.7",
+        "subagent": "or@z-ai/glm-4.7-flash"
+      }
+    },
     "frontier": {
       "name": "frontier",
       "models": {
