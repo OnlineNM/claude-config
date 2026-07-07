@@ -32,6 +32,13 @@ MARKETPLACES=(
   "https://github.com/bradautomates/claude-video"
   "https://github.com/forrestchang/andrej-karpathy-skills"
   "https://github.com/OnlineNM/claude-code-skills"
+  "https://github.com/adrianR84/browserless-claude-plugin"
+  "https://github.com/adrianR84/claude-code-protective-hooks"
+  "https://github.com/zilliztech/memsearch"
+  "https://github.com/stevesolun/micro-skills"
+  "https://github.com/AgriciDaniel/banana-claude"
+  "https://github.com/mvanhorn/last30days-skill"
+  "https://github.com/StarTrail-org/PixelRAG"
 )
 
 PLUGINS_OFFICIAL=(
@@ -60,6 +67,13 @@ PLUGINS_MARKETPLACE=(
   "telegram@claude-skills-laur"
   "wbs@claude-skills-laur"
   "pmpt@claude-skills-laur"
+  "browserless@browserless-claude-plugin"
+  "protective-hooks@claude-code-protective-hooks"
+  "memsearch"
+  "micro-skill-pipeline"
+  "banana-claude@banana-claude-marketplace"
+  "last30days"
+  "pixelbrowse@pixelrag-plugins"
 )
 
 prerequisites() {
