@@ -104,9 +104,7 @@ prerequisites() {
     SHELL_RC="$HOME/.bashrc"
   fi
 
-  if ! grep -q "\.local/bin" "$SHELL_RC" 2>/dev/null; then
-    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
-  fi
+  append_once_to_rc 'export PATH="$HOME/.local/bin:$PATH"' "$SHELL_RC"
 
   export PATH="$HOME/.local/bin:$PATH"
 
@@ -154,6 +152,18 @@ run_as_root() {
   fi
 }
 
+# Appends $1 to file $2 only if that exact line isn't already present.
+# Uses fixed-string, whole-line matching so it's immune to $VAR expansion
+# mismatches between the shell (which expands "$HOME" when quoted) and the
+# literal single-quoted text written to the rc file.
+append_once_to_rc() {
+  local line="$1"
+  local rc="$2"
+  if ! grep -qxF "$line" "$rc" 2>/dev/null; then
+    echo "$line" >> "$rc"
+  fi
+}
+
 configure_npm_prefix() {
   echo "Configuring npm global prefix..."
   mkdir -p "$HOME/.npm-global"
@@ -165,9 +175,7 @@ configure_npm_prefix() {
     SHELL_RC="$HOME/.bashrc"
   fi
 
-  if ! grep -q "$HOME/.npm-global/bin" "$SHELL_RC" 2>/dev/null; then
-    echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> "$SHELL_RC"
-  fi
+  append_once_to_rc 'export PATH="$HOME/.npm-global/bin:$PATH"' "$SHELL_RC"
 
   export PATH="$HOME/.npm-global/bin:$PATH"
   echo "npm prefix configured"
@@ -241,9 +249,7 @@ claude_code_auth() {
     SHELL_RC=~/.bashrc
   fi
 
-  if ! grep -q "\.claude/\.env" "$SHELL_RC"; then
-    echo '[ -f "$HOME/.claude/.env" ] && { set -a; source "$HOME/.claude/.env"; set +a; }' >> "$SHELL_RC"
-  fi
+  append_once_to_rc '[ -f "$HOME/.claude/.env" ] && { set -a; source "$HOME/.claude/.env"; set +a; }' "$SHELL_RC"
 
   # Create ~/.claude.json to bypass onboarding
   CLAUDE_VERSION=$(claude --version 2>/dev/null | head -1 || echo "2.1.0")
@@ -357,17 +363,10 @@ install_headroom() {
   echo "Installing Headroom..."
   uv tool install "headroom-ai[all]"
 
-  # Disable anonymous telemetry
-  if [[ "$(uname)" == "Darwin" ]]; then
-    SHELL_RC="$HOME/.zshrc"
-  else
-    SHELL_RC="$HOME/.bashrc"
-  fi
-
-  if ! grep -q "HEADROOM_TELEMETRY" "$SHELL_RC" 2>/dev/null; then
-    echo 'export HEADROOM_TELEMETRY=off' >> "$SHELL_RC"
-  fi
-
+  # Disable anonymous telemetry for this script's remaining install steps.
+  # setup_headroom()'s `headroom install apply` writes its own persistent
+  # HEADROOM_TELEMETRY=off line to the shell rc (in its managed
+  # ">>> headroom persistent env >>>" block), so we don't duplicate it here.
   export HEADROOM_TELEMETRY=off
   echo
 }
@@ -376,13 +375,16 @@ setup_headroom() {
   echo "Configuring Headroom..."
 
   # Install a persistent proxy service that survives reboots and re-logins.
-  # Auto-detects installed coding agents (Claude Code, Codex CLI, etc.).
+  # Auto-detects installed coding agents (Claude Code, Codex CLI, etc.) and
+  # wires up their provider routing (env vars) directly.
+  #
+  # NOTE: do NOT also run `headroom init -g claude`/`codex` here. That command
+  # creates a second, unsupervised "init-user" profile bound to the same port
+  # and installs hooks that call `headroom init hook ensure --profile
+  # init-user` before every Bash command, fighting with the persistent
+  # "default" service for port 8787 and causing the proxy to restart/flap on
+  # every command.
   headroom install apply --providers auto
-
-  # Install durable hooks + provider routing per agent so each one talks
-  # to the proxy automatically without per-session env vars.
-  headroom init -g claude
-  headroom init -g codex
 
   # Register the headroom_retrieve MCP tool with every detected agent.
   headroom mcp install
