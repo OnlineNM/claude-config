@@ -39,6 +39,7 @@ MARKETPLACES=(
   "https://github.com/AgriciDaniel/banana-claude"
   "https://github.com/mvanhorn/last30days-skill"
   "https://github.com/StarTrail-org/PixelRAG"
+  "https://github.com/chopratejas/headroom"
 )
 
 PLUGINS_OFFICIAL=(
@@ -74,6 +75,7 @@ PLUGINS_MARKETPLACE=(
   "banana-claude@banana-claude-marketplace"
   "last30days"
   "pixelbrowse@pixelrag-plugins"
+  "headroom@headroom-marketplace"
 )
 
 prerequisites() {
@@ -90,6 +92,23 @@ prerequisites() {
   curl -fsSL https://bun.sh/install | bash
   export BUN_INSTALL="$HOME/.bun"
   export PATH="$BUN_INSTALL/bin:$PATH"
+
+  # Install uv
+  if ! command -v uv >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+  fi
+
+  if [[ "$(uname)" == "Darwin" ]]; then
+    SHELL_RC="$HOME/.zshrc"
+  else
+    SHELL_RC="$HOME/.bashrc"
+  fi
+
+  if ! grep -q "\.local/bin" "$SHELL_RC" 2>/dev/null; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
+  fi
+
+  export PATH="$HOME/.local/bin:$PATH"
 
   echo
 }
@@ -193,6 +212,12 @@ cleanup() {
 install_claude_code() {
   echo "Installing Claude Code..."
   npm install -g @anthropic-ai/claude-code
+  echo
+}
+
+install_codex_cli() {
+  echo "Installing Codex CLI..."
+  npm install -g @openai/codex
   echo
 }
 
@@ -328,6 +353,45 @@ install_official_plugins() {
   echo
 }
 
+install_headroom() {
+  echo "Installing Headroom..."
+  uv tool install "headroom-ai[all]"
+
+  # Disable anonymous telemetry
+  if [[ "$(uname)" == "Darwin" ]]; then
+    SHELL_RC="$HOME/.zshrc"
+  else
+    SHELL_RC="$HOME/.bashrc"
+  fi
+
+  if ! grep -q "HEADROOM_TELEMETRY" "$SHELL_RC" 2>/dev/null; then
+    echo 'export HEADROOM_TELEMETRY=off' >> "$SHELL_RC"
+  fi
+
+  export HEADROOM_TELEMETRY=off
+  echo
+}
+
+setup_headroom() {
+  echo "Configuring Headroom..."
+
+  # Install a persistent proxy service that survives reboots and re-logins.
+  # Auto-detects installed coding agents (Claude Code, Codex CLI, etc.).
+  headroom install apply --providers auto
+
+  # Install durable hooks + provider routing per agent so each one talks
+  # to the proxy automatically without per-session env vars.
+  headroom init -g claude
+  headroom init -g codex
+
+  # Register the headroom_retrieve MCP tool with every detected agent.
+  headroom mcp install
+
+  echo "Headroom configured"
+  echo "Manage the persistent proxy with: headroom install {status|stop|start|restart|remove}"
+  echo
+}
+
 install_claudish() {
   echo "Installing claudish..."
   npm install -g claudish
@@ -354,6 +418,7 @@ main() {
   prerequisites
   cleanup
   install_claude_code
+  install_codex_cli
   claude_code_auth
   setup_hooks
   register_marketplaces
@@ -361,6 +426,8 @@ main() {
   initial_auth_session
   install_official_plugins
   fix_plugin_permissions
+  install_headroom
+  setup_headroom
   install_claudish
   setup_claudish
 
