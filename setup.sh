@@ -279,6 +279,19 @@ install_marketplace_plugins() {
   echo
 }
 
+fix_plugin_permissions() {
+  echo "Fixing plugin script permissions..."
+  local plugins_cache_dir="$HOME/.claude/plugins/cache"
+
+  if [[ -d "$plugins_cache_dir" ]]; then
+    find "$plugins_cache_dir" -type f -name "*.sh" -exec chmod +x {} +
+    echo "Plugin script permissions fixed"
+  else
+    echo "No plugin cache directory found; skipping"
+  fi
+  echo
+}
+
 initial_auth_session() {
   echo "Starting Claude for initial authentication..."
 
@@ -347,6 +360,7 @@ main() {
   install_marketplace_plugins
   initial_auth_session
   install_official_plugins
+  fix_plugin_permissions
   install_claudish
   setup_claudish
 
