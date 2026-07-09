@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Reapplies two local fixes to claudish's dist/index.js needed for the
+ * Reapplies local fixes to claudish's dist/index.js needed for the
  * Cloudflare Workers AI customEndpoints setup (see ~/.claudish/config.json,
- * profile "cloudflare-glm"):
+ * profile "cloudflare-glm"), plus a status line fix:
  *
  * 1. ComposedHandler '@' bug: ComposedHandler throws if the modelName it's
  *    constructed with contains '@', but Cloudflare Workers AI model IDs always
@@ -22,6 +22,13 @@
  *    that resolves "${VAR}" anywhere in a customEndpoints entry (baseUrl,
  *    url, headers, apiKey, ...) from process.env before the entry is
  *    validated.
+ *
+ * 3. Forced status line: claudish always injects its own cost-tracking
+ *    statusLine into the temp --settings file it passes to `claude` (and
+ *    overwrites it even when the user already supplied --settings), which
+ *    clobbers our own claude/ccstatusline-settings.json statusLine. This
+ *    removes the forced statusLine key entirely so Claude Code falls back
+ *    to the statusLine from ~/.claude/settings.json as usual.
  *
  * Safe to re-run: skips patches that are already applied, and re-applies any
  * that were reset by a `npm install -g claudish` upgrade.
@@ -124,6 +131,27 @@ const REPLACEMENTS = [
       '    try {\n' +
       '      const entry = interpolateEnvVarsDeep(rawEntry);\n' +
       '      const validated = CustomEndpointSchema.parse(entry);',
+  ],
+  [
+    'function buildClaudishSettingsOverlay(statusLine, proxyAuthMode) {\n' +
+      '  const settings = { statusLine, disableClaudeAiConnectors: true };\n' +
+      '  if (proxyAuthMode) {\n' +
+      '    settings.forceLoginMethod = "console";\n' +
+      '  }\n' +
+      '  return settings;\n' +
+      '}',
+    'function buildClaudishSettingsOverlay(statusLine, proxyAuthMode) {\n' +
+      '  const settings = { disableClaudeAiConnectors: true };\n' +
+      '  if (proxyAuthMode) {\n' +
+      '    settings.forceLoginMethod = "console";\n' +
+      '  }\n' +
+      '  return settings;\n' +
+      '}',
+  ],
+  [
+    '    userSettings.statusLine = statusLine;\n' +
+      '    if (!("disableClaudeAiConnectors" in userSettings)) {',
+    '    if (!("disableClaudeAiConnectors" in userSettings)) {',
   ],
 ];
 
