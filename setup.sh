@@ -34,7 +34,7 @@ MARKETPLACES=(
   "https://github.com/OnlineNM/claude-code-skills"
   "https://github.com/adrianR84/browserless-claude-plugin"
   "https://github.com/adrianR84/claude-code-protective-hooks"
-  # "https://github.com/zilliztech/memsearch"
+  "https://github.com/zilliztech/memsearch"
   "https://github.com/stevesolun/micro-skills"
   "https://github.com/AgriciDaniel/banana-claude"
   "https://github.com/mvanhorn/last30days-skill"
